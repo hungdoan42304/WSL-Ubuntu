@@ -1,0 +1,106 @@
+I. Server disk đầy
+
+1/ lệnh check disk khi server full:
+	du -sh /* 2>/dev/null | sort -h | head -n 10
+
+2/ tìm file/thư mục lớn nhất bên trong:
+	cd /var
+	du -xh | sort -h | tail
+
+3/ tìm file lớn nếu nghi ngờ folder
+	find /var/log -type f -size +500M
+	
+	hoặc tìm toàn bộ 10 file lớn nhất theo thứ tự sắp xếp 	
+
+	sudo find / -type f -exec du -h {} + 2>/dev/null | sort -rh | head -n 10
+
+	hoặc dào sâu vào thu muc /var 	
+
+	sudo du -sh /var/* 2>/dev/null | sort -rh | head -n 10
+
+4/ Giải phóng Disk an toàn
+
+	.Làm rỗng file (Truncate file) thay vì xóa:
+
+	sudo truncate -s 0 /var/log/*log Hoặc cách nhanh hơn:
+	sudo true > /var/log/app.log
+	
+	.Dọn dẹp log hệ thống(giới hạn và dọn dẹp bớt log chỉ giữ lại 100MB gần nhất)
+
+	sudo journalctl --vacuum-size=100M
+
+	.Dọn dẹp bộ nhớ đệm của các gói cài đặt (Apt Cache):
+
+	sudo apt-get clean
+	sudo apt-get autoremove --purge
+
+	.dọn các file backup cũ (.tar.gz), file tạm (.tmp) không có tiến trình nào đang đọc/ghi
+
+	sudo rm -f /đường_dẫn_đến_file/backup_cu.tar.gz
+
+
+bonus:
+
+1/ tìm file trong mục usr mà có dung lượng lớn hơn 100 MB list ra 10 dòng đầu?
+
+sudo find /usr -type f -size +100M -exec ls -lh {} + 2>/dev/null | sort -k 5 -rh | head -n 10
+
+2/ lệnh nào vừa hiển thị cả danh sách vừa hiển thị chính xác dung lượng của thư mục bên trong?
+
+du -h --max-depth=1
+du -lah --max-depth=1 (không thực tế vì dung lượng ảo do file trùng hoặc file ảo trên hệ thống linux)
+
+sudo du -h --max-depth=1 2>/dev/null | sort -rh | head -n 12
+
+sudo find / -type f -size +500M -exec ls -lh {} + 2>/dev/null
+
+thực tế:
+
+Chạy lệnh df -h để xem phân vùng nào bị đầy.
+
+Chạy lệnh sudo du -h --max-depth=1 tại phân vùng đó để dò xem thư mục nào là "hang ổ" của file rác.
+
+Nếu nghi ngờ có file log đột biến, dùng lệnh find ... -exec ls -lh {} + để tìm trực tiếp file lớn.
+
+
+
+II. Kiểm tra tổng quan tình trạng CPU
+
+1/ kiểm tra chung
+	top/htop
+
+2/ lệnh hiển thị Top 10 tiến trình ăn CPU
+	ps -eo pid,ppid,cmd,%cpu,%mem --sort=-%cpu | head -n 11
+
+3/ Kiểm tra kỹ xem đó là tiến trình gì: vd: tiến trình 1234
+	ps -fp 1234
+Để đảm bảo bạn không giết nhầm các tiến trình hệ thống quan trọng
+
+4/ tắt tiến trình:
+	sudo kill -15 1234 (tắt tiến trình an toàn)
+	sudo kill -9 1234 (buộc dung tiến trình
+
+Phần bài tập
+
+1. Lệnh nào tìm tất cả file .log trong /var và xóa chúng?
+
+B. find /var -name "*.log" -delete
+
+2. Lệnh nào hiển thị dòng chứa “error” nhưng không phân biệt hoa thường?
+
+grep -i error file
+
+3. lệnh echo $PATH là:
+
+A: sai vì xem tiến trình dung lệnh top/htop hoặc ps
+B. Biến môi trường chứa đường dẫn executable : &PATH
+C. đường dẫn home là echo $HOME
+D. xem thư mục hiện tại bạn đang đứng : pwd hoặc &PWD
+
+4. C. command > file 2>&1 
+5. B. wc -l file  	
+6. B. Truyền output của command này sang command khác
+7. B. Kiểm tra process nginx đang chạy
+8. A. find / -size +100M 
+9. A. Owner: rw-, Group: r--, Others: r--
+10. B. du -sh 
