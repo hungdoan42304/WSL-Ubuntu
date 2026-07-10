@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Báo cáo Lab: DHCP Failover Windows Server 2019</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: #fcfaf6;
+            color: #2d3748;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #319795;
+            padding-bottom: 20px;
+            margin-bottom: 35px;
+        }
+        h1 {
+            color: #1a202c;
+            font-size: 26px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+        }
+        .subtitle {
+            color: #718096;
+            font-size: 14px;
+            font-style: italic;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #2c5282;
+            font-size: 18px;
+            border-left: 5px solid #3182ce;
+            padding-left: 12px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+        h3 {
+            color: #2b6cb0;
+            font-size: 15px;
+            margin: 15px 0 8px 0;
+        }
+        p, li {
+            font-size: 15px;
+            color: #4a5568;
+            margin-bottom: 10px;
+        }
+        ul, ol {
+            padding-left: 25px;
+            margin-bottom: 15px;
+        }
+        li {
+            margin-bottom: 6px;
+        }
+        .highlight {
+            background-color: #ebf8ff;
+            border-left: 4px solid #4299e1;
+            padding: 12px 16px;
+            margin: 15px 0;
+            border-radius: 0 6px 6px 0;
+        }
+        .highlight-title {
+            font-weight: bold;
+            color: #2b6cb0;
+            margin-bottom: 5px;
+        }
+        .warning {
+            background-color: #fffaf0;
+            border-left: 4px solid #dd6b20;
+            padding: 12px 16px;
+            margin: 15px 0;
+            border-radius: 0 6px 6px 0;
+        }
+        .warning-title {
+            font-weight: bold;
+            color: #dd6b20;
+            margin-bottom: 5px;
+        }
+        .danger {
+            background-color: #fff5f5;
+            border-left: 4px solid #e53e3e;
+            padding: 12px 16px;
+            margin: 15px 0;
+            border-radius: 0 6px 6px 0;
+        }
+        .danger-title {
+            font-weight: bold;
+            color: #e53e3e;
+            margin-bottom: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 10px 14px;
+            text-align: left;
+        }
+        th {
+            background-color: #f7fafc;
+            color: #2d3748;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        code {
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            background-color: #edf2f7;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #805ad5;
+        }
+        pre {
+            background-color: #1a202c;
+            color: #edf2f7;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            font-size: 13.5px;
+            line-height: 1.5;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            color: inherit;
+            font-size: inherit;
+        }
+        .diagram {
+            background-color: #f8fafc;
+            border: 1px dashed #cbd5e0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: monospace;
+            white-space: pre;
+            overflow-x: auto;
+            color: #4a5568;
+            margin: 15px 0;
+            line-height: 1.2;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Báo cáo Kỹ thuật Lab: DHCP Failover</h1>
+        <p style="font-size: 18px; color: #4a5568; font-weight: 500; margin-bottom: 5px;">Windows Server 2019</p>
+        <div class="subtitle">Hệ thống cấp phát IP động có tính sẵn sàng cao (High Availability)</div>
+    </div>
+
+    <div class="section">
+        <h2>Mục tiêu bài Lab</h2>
+        <ul>
+            <li>Xây dựng hệ thống dịch vụ DHCP Server có tính sẵn sàng cao (High Availability).</li>
+            <li>Đảm bảo cơ chế dự phòng: Khi một DHCP Server bị lỗi hoặc tắt hoàn toàn, DHCP Server còn lại vẫn tiếp tục duy trì hoạt động cấp phát địa chỉ IP cho máy Trạm (Client) một cách liên tục.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>I. Mô hình Lab</h2>
+        <p>Hệ thống được triển khai trên nền tảng ảo hóa Hyper-V với cấu trúc phân mạng như sau:</p>
+        <div class="diagram">                     Hyper-V
+
+          +-----------------------------------+
+          |          Internal Switch          |
+          |                LAB                |
+          +-----------------------------------+
+                            │
+         ┌──────────────────┴──────────────────┐
+         │                                     │
+   192.168.10.10                         192.168.10.11
+      [DC01]                                [DC02]
+     AD DS, DNS                            AD DS, DNS
+    DHCP Primary                          DHCP Partner
+         │                                     │
+         └──────────────────┬──────────────────┘
+                            │ DHCP Failover
+                            │
+                      192.168.10.x
+                       [CLIENT01]
+                      DHCP Client</div>
+    </div>
+
+    <div class="section">
+        <h2>II. Chuẩn bị Môi trường Hyper-V</h2>
+        <p>Tạo một <strong>Internal Switch</strong> chuyên dụng trong Hyper-V Manager để cô lập môi trường kiểm thử:</p>
+        <ol>
+            <li>Mở <code>Hyper-V Manager</code> &rarr; Chọn <code>Virtual Switch Manager</code>.</li>
+            <li>Chọn <code>New Virtual Network Switch</code> &rarr; Chọn kiểu <code>Internal</code>.</li>
+            <li>Đặt tên Switch: <code>LAB</code>.</li>
+        </ol>
+        <div class="warning">
+            <div class="warning-title">Lưu ý quan trọng:</div>
+            Không sử dụng <em>External Switch</em> nhằm tránh hiện tượng xung đột/nhiễu tín hiệu DHCP từ các thiết bị modem hoặc router vật lý trong mạng thật cấp phát sai lệch IP cho bài lab.
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>III. Cấu hình Địa chỉ IP Tĩnh</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Tên Máy (VM)</th>
+                    <th>Địa chỉ IP</th>
+                    <th>Subnet Mask</th>
+                    <th>DNS Server cấu hình</th>
+                    <th>Default Gateway</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>DC01</strong></td>
+                    <td>192.168.10.10</td>
+                    <td>255.255.255.0</td>
+                    <td>127.0.0.1<br>192.168.10.11</td>
+                    <td><i>Không cần cấu hình</i></td>
+                </tr>
+                <tr>
+                    <td><strong>DC02</strong></td>
+                    <td>192.168.10.11</td>
+                    <td>255.255.255.0</td>
+                    <td>192.168.10.11<br>192.168.10.10</td>
+                    <td><i>Không cần cấu hình</i></td>
+                </tr>
+                <tr>
+                    <td><strong>CLIENT01</strong></td>
+                    <td colspan="4" style="text-align: center; color: #718096; font-style: italic;">Để chế độ nhận IP tự động (Obtain an IP address automatically)</td>
+                </tr>
+            </tbody>
+        </table>
+        <p style="font-size: 13px; color: #718096; font-style: italic;">* Do hệ thống chạy trên Internal Switch cô lập hoàn toàn nên không cần khai báo Default Gateway.</p>
+    </div>
+
+    <div class="section">
+        <h2>IV. Cài đặt Active Directory & Domain Controller</h2>
+        <h3>Khởi tạo trên DC01:</h3>
+        <ul>
+            <li>Cài đặt vai trò <code>AD DS</code> và <code>DNS Server</code>.</li>
+            <li>Nâng cấp (Promote) máy chủ để tạo một Forest mới với Domain Name là <code>lab.local</code>.</li>
+        </ul>
+        <h3>Cấu hình trên DC02:</h3>
+        <ul>
+            <li>Thực hiện Join máy chủ vào Domain <code>lab.local</code>.</li>
+            <li>Tiến hành Promote máy chủ này thành <strong>Additional Domain Controller</strong> để đồng bộ dữ liệu thư mục với DC01.</li>
+        </ul>
+        <h3>Kiểm tra trạng thái đồng bộ mã nguồn AD:</h3>
+        <p>Sử dụng các lệnh PowerShell/CMD sau để xác nhận hoạt động ổn định:</p>
+        <pre><code>repadmin /replsummary
+dcdiag</code></pre>
+        <p>Kiểm tra kết quả: Đảm bảo tiến trình <em>Replication OK</em> và không có lỗi hệ thống.</p>
+    </div>
+
+    <div class="section">
+        <h2>V. Cài đặt & Ủy quyền Dịch vụ DHCP trên DC01</h2>
+        <ol>
+            <li>Sử dụng trình quản lý Server Manager thực hiện <code>Add Roles and Features</code> &rarr; Chọn vai trò <code>DHCP Server</code>.</li>
+            <li>Sau khi tiến trình cài đặt hoàn tất, nhấn vào mục <code>Complete DHCP Configuration</code> để khởi chạy trình thuật toán cấu hình ban đầu.</li>
+            <li>Thực hiện xác thực và ủy quyền dịch vụ trên Active Directory (<strong>Authorize DHCP</strong>).</li>
+        </ol>
+    </div>
+
+    <div class="section">
+        <h2>VI. Khởi tạo DHCP Scope trên DC01</h2>
+        <p>Tạo một phân vùng cấp phát địa chỉ mới với các thông số chi tiết dưới đây:</p>
+        <ul>
+            <li><strong>Scope Name:</strong> <code>Office-LAN</code></li>
+            <li><strong>Network Address:</strong> <code>192.168.10.0</code></li>
+            <li><strong>Subnet Mask:</strong> <code>255.255.255.0</code></li>
+            <li><strong>Start IP Address:</strong> <code>192.168.10.100</code></li>
+            <li><strong>End IP Address:</strong> <code>192.168.10.200</code></li>
+            <li><strong>Lease Duration:</strong> <code>8 ngày</code></li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>VII. Cấu hình Scope Options</h2>
+        <p>Khai báo bổ sung các thông số cấu hình mạng cơ bản gửi kèm cho Client:</p>
+        <ul>
+            <li><strong>006 DNS Servers:</strong> IP của máy chủ DNS chính: <code>192.168.10.10</code></li>
+            <li><strong>003 Router (Default Gateway):</strong> Khai báo thử nghiệm: <code>192.168.10.1</code> <em>(Có thể bỏ qua nếu chỉ sử dụng mạng nội bộ Internal Switch)</em></li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>VIII. Kiểm tra Trạng thái Dịch vụ DHCP Ban đầu</h2>
+        <p>Thực hiện kiểm tra tính chính xác của cấu hình bằng PowerShell:</p>
+        <pre><code># Kiểm tra trạng thái dịch vụ DHCP
+Get-Service DHCPServer
+
+# Kiểm tra danh sách Scope hiện hành
+Get-DhcpServerv4Scope
+
+# Kiểm tra card mạng đang gán (Binding) dịch vụ cấp phát
+Get-DhcpServerv4Binding</code></pre>
+        <p><strong>Kết quả mong đợi:</strong> Dịch vụ hiển thị trạng thái <code>Running</code>; Scope <code>Office-LAN</code> ở trạng thái <code>Active</code>; Interface Ethernet tương ứng với IP <code>192.168.10.10</code> có giá trị gán gán là <code>True</code>.</p>
+    </div>
+
+    <div class="section">
+        <h2>IX. Sự cố Thực tế Gặp phải (Troubleshooting)</h2>
+        <div class="danger">
+            <div class="danger-title">Hiện tượng lỗi:</div>
+            Máy trạm CLIENT01 hoàn toàn không nhận được địa chỉ IP tự động từ máy chủ DC01.
+            <ul>
+                <li>Hệ thống tự gán địa chỉ APIPA tự động: <code>169.254.x.x</code>.</li>
+                <li>Thực thi lệnh làm mới địa chỉ <code>ipconfig /renew</code> bị treo/đứng hoàn toàn.</li>
+                <li>Khi tiến hành thực hiện lệnh <code>ping</code> ra ngoài thì xuất hiện thông báo lỗi: <code>PING: transmit failed. General failure.</code></li>
+            </ul>
+        </div>
+        <h3>Kiểm tra thống kê DHCP Statistics trên máy chủ:</h3>
+        <p>Khi chạy lệnh kiểm tra, các thông số ghi nhận:</p>
+        <ul>
+            <li><strong>Discovers:</strong> 0</li>
+            <li><strong>Offers:</strong> 0</li>
+            <li><strong>Requests:</strong> 0</li>
+        </ul>
+        <p>&rArr; Kết luận sơ bộ: DHCP Server hoàn toàn không nhận được bất kỳ bản tin <code>DHCP Discover</code> nào gửi lên từ phía Client.</p>
+    </div>
+
+    <div class="section">
+        <h2>X. Quy trình Các bước Cô lập Lỗi</h2>
+        <ol>
+            <li><strong>Kiểm tra Layer 2 (Mạng ảo Hyper-V):</strong> Xác nhận cả 3 máy ảo (DC01, DC02, CLIENT01) đều đã được cấu hình chung và kết nối chính xác vào mạng <code>LAB</code>.</li>
+            <li><strong>Kiểm tra DHCP Binding:</strong> Đảm bảo thông số kết nối dịch vụ hiển thị trạng thái <code>Binding=True</code> trên card mạng của Server.</li>
+            <li><strong>Kiểm tra Tường lửa (Firewall):</strong> Đảm bảo luật <code>DHCP UDP Inbound (Port 67, 68)</code> đã được chuyển sang trạng thái kích hoạt (Enabled).</li>
+            <li><strong>Kiểm tra Trạng thái Service:</strong> Khẳng định tiến trình Windows Service <code>DHCPServer</code> đang chạy ổn định (Running).</li>
+            <li><strong>Kiểm tra Kết nối vật lý/bằng IP tĩnh:</strong> Thử nghiệm đặt IP tĩnh thủ công cho máy Client là <code>192.168.10.50</code> và thực hiện lệnh <code>ping 192.168.10.10</code>. Kết quả: Kết nối thành công. &rArr; Xác minh hệ thống chuyển mạch ảo Hyper-V hoàn toàn bình thường.</li>
+        </ol>
+    </div>
+
+    <div class="section">
+        <h2>XI. Nguyên nhân Thực tế Phát hiện</h2>
+        <p>Tiến hành chạy câu lệnh kiểm tra trạng thái đăng ký của dịch vụ DHCP trong Active Directory:</p>
+        <pre><code>Get-DhcpServerInDC</code></pre>
+        <p><strong>Kết quả:</strong> Hệ thống trống rỗng, không trả về bất cứ thông tin máy chủ nào. </p>
+        <p>&rArr; <strong>Kết luận nguyên nhân:</strong> Do dịch vụ DHCP Server trên DC01 mới chỉ cài đặt thông thường mà chưa được thực hiện tiến trình <strong>Authorize (Ủy quyền)</strong> hợp lệ trong cơ sở dữ liệu Active Directory Domain Services.</p>
+    </div>
+
+    <div class="section">
+        <h2>XII. Biện pháp Khắc phục & Sửa lỗi</h2>
+        <p>Tiến hành chạy lệnh PowerShell để ép buộc đăng ký ủy quyền cho máy chủ DC01 và thực hiện khởi động lại dịch vụ mạng:</p>
+        <pre><code># Ủy quyền DHCP Server vào Active Directory
+Add-DhcpServerInDC -DnsName DC01.lab.local -IPAddress 192.168.10.10
+
+# Khởi động lại dịch vụ để áp dụng thay đổi
+Restart-Service DHCPServer</code></pre>
+        <p>Kiểm tra lại bằng lệnh <code>Get-DhcpServerInDC</code>, hệ thống đã hiển thị bản ghi map thông tin cụ thể: <code>192.168.10.10 | dc01.lab.local</code>.</p>
+        <p><strong>Kết quả kiểm tra từ máy trạm CLIENT01:</strong> Chạy lại lệnh <code>ipconfig /renew</code>, máy trạm lập tức nhận được IP mới: <code>192.168.10.101</code>. Lỗi đã được xử lý triệt để.</p>
+    </div>
+
+    <div class="section">
+        <h2>XIII. Cài đặt Dịch vụ DHCP bổ sung trên Partner (DC02)</h2>
+        <ol>
+            <li>Tru cập vào máy chủ <strong>DC02</strong>, thêm vai trò <code>DHCP Server</code> thông qua Server Manager hoặc PowerShell.</li>
+            <li>Thực hiện các bước <code>Complete DHCP Configuration</code> và tiến hành chạy lệnh <strong>Authorize</strong> tương tự như máy thứ nhất.</li>
+            <li>Chạy lệnh xác minh <code>Get-DhcpServerInDC</code> nhằm đảm bảo danh sách hiện hữu đồng thời cả 2 máy chủ: <code>DC01</code> và <code>DC02</code>.</li>
+        </ol>
+    </div>
+
+    <div class="section">
+        <h2>XIV. Nguyên tắc Đồng bộ: Không khởi tạo Scope thủ công trên DC02</h2>
+        <div class="warning">
+            <div class="warning-title">Lưu ý quan trọng cho Kỹ sư hệ thống:</div>
+            Đây là lỗi tư duy phổ biến mà rất nhiều người mới bắt đầu học quản trị mạng thường mắc phải. Tại máy chủ phụ <strong>DC02, tuyệt đối KHÔNG tiến hành tạo mới bất kỳ Scope nào</strong>. Toàn bộ cấu hình Scope sẽ được đồng bộ và cấu trúc tự động từ máy chủ chính DC01 sang sau khi hoàn tất thiết lập Failover.
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>XV. Cấu hình Cơ chế DHCP Failover</h2>
+        <p>Thực hiện các bước cấu hình thiết lập mối quan hệ dự phòng trên máy chủ <strong>DC01</strong>:</p>
+        <ol>
+            <li>Mở công cụ quản trị <code>DHCP</code> &rarr; Mở rộng nhánh <code>IPv4</code> &rarr; Click chuột phải vào Scope <code>Office-LAN</code> &rarr; Chọn <code>Configure Failover</code>.</li>
+            <li>Tại mục chỉ định máy chủ đối tác (Partner Server), nhập địa chỉ hoặc tên của máy chủ: <code>DC02</code>.</li>
+            <li>Thiết lập các thông số hoạt động chi tiết như sau:
+                <ul>
+                    <li><strong>Failover Mode:</strong> <code>Load Balance</code> (Chế độ cân bằng tải dịch vụ).</li>
+                    <li><strong>Load Percentage:</strong> Mỗi bên đảm nhận <code>50%</code> lượng yêu cầu cấp phát.</li>
+                    <li><strong>MCLT (Maximum Client Lead Time):</strong> Đặt thời gian giữ chỗ tạm thời là <code>1 hour</code> (1 giờ).</li>
+                    <li><strong>State Switchover Interval:</strong> Tự động chuyển đổi trạng thái sau <code>1 hour</code> khi mất kết nối đối tác.</li>
+                    <li><strong>Shared Secret (Khóa bảo mật dùng chung):</strong> Nhập chuỗi bảo mật mã hóa, ví dụ: <code>DHCPFailover@2026</code>.</li>
+                </ul>
+            </li>
+            <li>Nhấn <code>Finish</code> để hoàn thành quá trình thiết lập.</li>
+        </ol>
+    </div>
+
+    <div class="section">
+        <h2>XVI. Kiểm tra Trạng thái Đồng bộ Hệ thống sau Failover</h2>
+        <p>Di chuyển sang máy chủ đối tác <strong>DC02</strong> và mở PowerShell kiểm tra kết quả đồng bộ dữ liệu tự động:</p>
+        <pre><code># Kiểm tra sự xuất hiện tự động của Scope Office-LAN
+Get-DhcpServerv4Scope
+
+# Kiểm tra thông tin cấu hình Failover vừa thiết lập
+Get-DhcpServerv4Failover</code></pre>
+        <p><strong>Kết quả ghi nhận thành công:</strong> Scope <code>Office-LAN</code> lập tức xuất hiện tự động trên danh sách của DC02 mà không cần khởi tạo bằng tay. Bản tin Failover trả về chính xác cấu hình <code>Mode: LoadBalance</code>.</p>
+    </div>
+
+    <div class="section">
+        <h2>XVII. Kịch bản Kiểm thử Tính sẵn sàng cao (Test Failover)</h2>
+        <p>Để chứng minh tính đúng đắn của giải pháp dự phòng, thực hiện kịch bản giả lập sự cố như sau:</p>
+        <ol>
+            <li>Trên máy trạm <strong>CLIENT01</strong>, thực hiện giải phóng địa chỉ đang thuê bằng lệnh: <code>ipconfig /release</code>.</li>
+            <li>Tiến hành cô lập lỗi bằng cách <strong>Tắt hoàn toàn máy chủ chính DC01</strong> (Shutdown VM).</li>
+            <li>Quay lại máy trạm <strong>CLIENT01</strong>, thực hiện yêu cầu xin cấp phát lại địa chỉ IP: <code>ipconfig /renew</code>.</li>
+        </ol>
+        <div class="highlight">
+            <div class="highlight-title">Kết quả đạt được:</div>
+            Máy trạm CLIENT01 vẫn nhanh chóng nhận được một địa chỉ IP hợp lệ trong dải cấp phát (Ví dụ cụ thể: <code>192.168.10.148</code>). Dịch vụ mạng của máy trạm hoạt động liên tục không gián đoạn nhờ sự tiếp quản kịp thời từ phía Partner Server DC02.
+            <br><br>
+            <strong>&rArr; Hệ thống DHCP Failover hoạt động thành công tuyệt đối!</strong>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>XVIII. Hệ thống các câu lệnh PowerShell quản trị DHCP Quan trọng</h2>
+        <p>Dưới đây là bảng tổng hợp danh mục lệnh phục vụ quản trị và kiểm tra nhanh hệ thống DHCP qua PowerShell:</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Nhóm chức năng</th>
+                    <th>Cú pháp lệnh PowerShell</th>
+                    <th>Mô tả chi tiết tác vụ</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td rowspan="5" style="font-weight: bold; background-color: #fcfcfc;">Giám sát & Kiểm tra</td>
+                    <td><code>Get-Service DHCPServer</code></td>
+                    <td>Kiểm tra trạng thái hoạt động của Windows Service DHCP.</td>
+                </tr>
+                <tr>
+                    <td><code>Get-DhcpServerv4Scope</code></td>
+                    <td>Xem toàn bộ danh sách phân vùng Scope IPv4 trên máy chủ.</td>
+                </tr>
+                <tr>
+                    <td><code>Get-DhcpServerv4Lease -ScopeId 192.168.10.0</code></td>
+                    <td>Liệt kê chi tiết các địa chỉ IP đang được cấp phát cho Client.</td>
+                </tr>
+                <tr>
+                    <td><code>Get-DhcpServerv4Statistics</code></td>
+                    <td>Xem bảng thống kê lưu lượng gói tin (Discover, Offer, Request...).</td>
+                </tr>
+                <tr>
+                    <td><code>Get-DhcpServerv4Binding</code></td>
+                    <td>Kiểm tra các cổng mạng logic đang kích hoạt dịch vụ DHCP.</td>
+                </tr>
+                <tr>
+                    <td rowspan="2" style="font-weight: bold; background-color: #fcfcfc;">Ủy quyền hệ thống AD</td>
+                    <td><code>Get-DhcpServerInDC</code></td>
+                    <td>Kiểm tra danh sách các máy chủ DHCP đang được duyệt trong AD.</td>
+                </tr>
+                <tr>
+                    <td><code>Add-DhcpServerInDC</code></td>
+                    <td>Thực hiện gán quyền Authorize máy chủ DHCP vào Active Directory.</td>
+                </tr>
+                <tr>
+                    <td rowspan="2" style="font-weight: bold; background-color: #fcfcfc;">Quản trị Failover</td>
+                    <td><code>Get-DhcpServerv4Failover</code></td>
+                    <td>Xem thông tin chi tiết mối quan hệ định hình Failover.</td>
+                </tr>
+                <tr>
+                    <td><code>Invoke-DhcpServerv4FailoverReplication</code></td>
+                    <td>Ép buộc thực hiện đồng bộ hóa dữ liệu tức thì giữa hai máy chủ.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>XIX. Kiến thức cốt lõi & Bài học kinh nghiệm</h2>
+        <ul>
+            <li><strong>Nguyên tắc Ủy quyền (Authorization):</strong> Một máy chủ dịch vụ DHCP đặt trong môi trường hạ tầng Domain bắt buộc phải được Authorize trong Active Directory. Nếu thiếu bước này, Windows Service vẫn báo chạy (Running) nhưng hệ thống sẽ tự động chặn, từ chối nhận diện bản tin và không cấp phát IP cho máy trạm.</li>
+            <li><strong>Thiết lập ảo hóa Lab:</strong> Khai thác mô hình <em>Internal Switch</em> là giải pháp thông minh và an toàn tối đa để triển khai môi trường Lab cục bộ, triệt tiêu mọi rủi ro gây nhiễu loạn hoặc xung đột với dải IP của hệ thống mạng thật bên ngoài.</li>
+            <li><strong>Nguyên lý thiết lập Failover:</strong> Chỉ khai báo tạo lập cấu hình Scope ban đầu duy nhất trên máy chủ chính (DC01). Cơ chế DHCP Failover thông minh của Windows Server sẽ chịu trách nhiệm tự động tạo bản sao và nhân bản đồng bộ toàn vẹn dữ liệu sang máy chủ đối tác.</li>
+            <li><strong>Quy trình chuẩn đoán lỗi nhận IP tự động (APIPA 169.254.x.x):</strong> Khi xuất hiện sự cố Client không nhận được IP, người quản trị cần thực hiện kiểm tra tuần tự theo các tầng kiểm soát:
+                <ol>
+                    <li>Kiểm tra cấu hình kết nối Layer 2 trên hạ tầng ảo hóa (Cùng Switch ảo Hyper-V).</li>
+                    <li>Kiểm tra trạng thái Windows Service của DHCP.</li>
+                    <li>Xác minh thuộc tính DHCP Binding trên card mạng.</li>
+                    <li>Kiểm tra tình trạng Active Directory Authorization của máy chủ.</li>
+                    <li>Đánh giá cấu hình dải IP trong Scope và các thông số Scope Options liên quan.</li>
+                </ol>
+            </li>
+            <li><strong>Giá trị từ DHCP Statistics:</strong> Thống kê lưu lượng gói tin là công cụ hỗ trợ chuẩn đoán sự cố vô cùng đắc lực. Nếu chỉ số <code>Discovers = 0</code>, điều này là bằng chứng rõ ràng nhất khẳng định máy chủ DHCP chưa nhận được bất kỳ tín hiệu hay yêu cầu xin cấp phát nào từ phía client truyền tới.</li>
+            <li><strong>Bài test thực nghiệm tối cao:</strong> Kịch bản ngắt kết nối vật lý hoặc tắt nguồn hoàn toàn một máy chủ trong cụm và chứng minh máy trạm vẫn nhận được gói thuê IP đầy đủ từ máy chủ đối tác còn lại là minh chứng thực tế rõ ràng nhất khẳng định tính năng Failover đang vận hành hoàn hảo và chính xác theo đúng thiết kế kiến trúc High Availability.</li>
+        </ul>
+    </div>
+</div>
+
+</body>
+</html>
