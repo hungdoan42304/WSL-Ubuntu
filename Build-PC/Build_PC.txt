@@ -11,12 +11,17 @@ WINDFORCE MAX OC 8G		8,990,000	Hotgear
 RAM DDR5 G.Skill Trident
 Z5 RGB 16GB (1x16GB ) 		4,990,000	GearVN
 6000mhz Silver
-
+RAM Kingston Fury Beast   3.490.000 nguyencongPC
+32GB (2x16GB) DDR5 6000MHz 
 
 Ổ cứng SSD Lexar NQ790 
-500GB M.2 2280			1.290.000	nguyencongPC
+500GB M.2 2280			    1.290.000	nguyencongPC
 NVMe Gen 4 x4 		
 (LNQ790X500G-RNNNG)
+
+Ổ cứng SSD WD Blue S    1.150.000 nguyencongPC
+N5000 500GB NVMe PCIe
+Gen4 x4
 
 Mainboard MSI B760M 		2,866,000	hotgear
 GAMING WIFI DDR5
